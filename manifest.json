@@ -1,0 +1,37 @@
+{
+   "manifest_version":3,
+   "icons":{
+      "128":"assets/icons/ic_128.png",
+      "48":"assets/icons/ic_48.png",
+      "16":"assets/icons/ic_16.png"
+   },
+   "name":"TurtlPass",
+   "short_name": "turtlpass",
+   "description":"This extension makes a hash of the user inputs and sends it to the device via USB to generate a password for it.",
+   "version":"1.0.0",
+   "author":"Ryan Amaral",
+   "homepage_url":"https://github.com/TurtlPass/turtlpass-chrome-extension",
+   "permissions":[
+      "scripting",
+      "activeTab",
+      "storage"
+   ],
+   "action":{
+      "default_popup":"popup.html"
+   },
+   "options_page": "app.html",
+   "content_scripts":[
+      {
+         "matches":[
+            "http://*/*",
+            "https://*/*"
+         ],
+         "all_frames":true,
+         "js":[
+            "js/lottie.5.10.0.min.js",
+            "js/passwordVisibility.js"
+         ],
+         "run_at": "document_start"
+      }
+   ]
+}
