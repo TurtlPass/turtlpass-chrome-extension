@@ -19,6 +19,11 @@ function getDomainWithoutSubdomain(url) {
         .join('.')
 }
 
+function getDomainFirstPart(hostname) {
+    return hostname.split('.').shift()
+    // shift() method removes the first element from an array and returns that element
+}
+
 
 //////////////////
 // onPageLoaded //
@@ -56,7 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }, tabs => {
         if (tabs != undefined && tabs[0] != undefined && tabs[0].url != undefined) {
             const url = tabs[0].url;
-            const domain = getDomainWithoutSubdomain(url);
+            //const domain = getDomainWithoutSubdomain(url);
+            const domain = getDomainFirstPart(getDomainWithoutSubdomain(url));
             var protocol = url.split(":")[0];
 
             // DOMAIN
