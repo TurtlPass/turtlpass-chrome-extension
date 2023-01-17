@@ -5,11 +5,11 @@
 TurtlPass Chrome Extension sends a hash of the user's inputs (Domain, Account ID, and PIN) to the TurtlPass Firmware via USB. When the physical button on the device is pressed, the firmware emulates an external keyboard and types the password. This method ensures that the password is never transmitted over potentially insecure channels, providing an additional layer of security.
 </p>
 <p align="center">
-<a href="https://github.com/TurtlPass/turtlpass-chrome-extension/releases"><img src="https://img.shields.io/badge/Chrome%20Extension-v1.0.0-green?logo=googlechrome" alt="Releases"/></a>
+<a href="https://github.com/TurtlPass/turtlpass-chrome-extension/releases"><img src="https://img.shields.io/github/v/release/TurtlPass/turtlpass-chrome-extension?color=green&label=Chrome%20Extension&logo=googlechrome" alt="Releases"/></a>
 </p>
 <p align="center">
-<a href="https://github.com/TurtlPass/turtlpass-firmware-arduino"><img src="https://img.shields.io/badge/Arduino%20Firmware-v1.0.0-blue?logo=arduino" alt="Firmware Repo"/></a>
-<a href="https://github.com/TurtlPass/turtlpass-android"><img src="https://img.shields.io/badge/Android%20App-v1.0.0-blue?logo=android" alt="Android Repo"/></a>
+<a href="https://github.com/TurtlPass/turtlpass-firmware-arduino"><img src="https://img.shields.io/github/v/release/TurtlPass/turtlpass-firmware-arduino?color=blue&label=Arduino%20Firmware&logo=arduino" alt="Firmware Repo"/></a>
+<a href="https://github.com/TurtlPass/turtlpass-android"><img src="https://img.shields.io/github/v/release/TurtlPass/turtlpass-android?color=blue&label=Android%20App&logo=android" alt="Android Repo"/></a>
 </p>
 
 
