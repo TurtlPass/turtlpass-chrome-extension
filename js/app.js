@@ -195,12 +195,8 @@ async function connectSerial() {
     message.innerHTML = "Connecting to your TurtlPass device...";
 
     try {
-        const rpiPico = {
-            usbVendorId: 0x2E8A,
-            usbProductId: 0x800A
-        };
         port = await navigator.serial.requestPort({
-            filters: [rpiPico]
+            filters: [{ usbVendorId: 0x2E8A }] // Raspberry Pi
         });
         await port.open({
             baudRate: 115200
