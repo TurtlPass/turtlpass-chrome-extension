@@ -62,11 +62,13 @@ chrome://flags/#enable-experimental-web-platform-features
 * [Web Serial API](https://web.dev/serial/)
 * [Lottie Web](https://github.com/airbnb/lottie-web)
 * [Material Design UI components for the web](https://github.com/material-components/material-components-web)
+* [SHA-512](http://pajhome.org.uk/crypt/)
+* [Argon2](https://github.com/antelle/argon2-browser)
 
 
 ## 📦 Sources
 
-* [JS implementation of SHA-512](http://pajhome.org.uk/crypt/)
+* [Load Wasm in manifest-v3](https://groups.google.com/a/chromium.org/g/chromium-extensions/c/sJiaTnFMLHQ/m/y-qT1gplHwAJ)
 * [Load favicon images](https://stackoverflow.com/a/15750809/904907)
 * [UI of PIN input](https://codepen.io/bradeneast/pen/YzzMoGw)
 * [USB Memory Stick Animation](https://lottiefiles.com/20358-usb-memory-stick-animation)
@@ -75,8 +77,7 @@ chrome://flags/#enable-experimental-web-platform-features
 
 ## 🔮 Future improvements
 
-- Read NFC Tag ID
-- Hash with Argon2
+- Read NFC Tag ID with an external reader via USB serial (optional input)
 
 
 ## 📄 License

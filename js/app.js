@@ -38,7 +38,7 @@ connectButton.addEventListener('click', () => {
         anim = bodymovin.loadAnimation(loaderAnimParams);
         anim.playSegments(loadingSegment, true);
         window.onresize = anim.resize.bind(anim);
-        connectSerial();
+        startKdfWorker();
     } else {
         alert('Error: Web Serial API is not supported by your browser.');
     }
@@ -157,14 +157,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 ////////////////
-// USB Serial //
+// KDF Worker //
 ////////////////
 
-var port, textEncoder, writableStreamClosed, writer;
-let keepReading = true;
-let reader;
+async function startKdfWorker() {
+    message.style.marginTop = '30px';
+    message.innerHTML = "Generating hash...";
 
-async function sendSerialLine() {
     chrome.storage.local.get('selectedDomain', function(resultDomain) {
         if (!chrome.runtime.error && resultDomain.selectedDomain != undefined) {
             const domain = resultDomain.selectedDomain;
@@ -174,12 +173,21 @@ async function sendSerialLine() {
                     try {
                         const pin = document.getElementById('n1').value += document.getElementById('n2').value += document.getElementById('n3').value += document.getElementById('n4').value += document.getElementById('n5').value += document.getElementById('n6').value;
                         var data = "";
-                        data += pin; //ex: 123456
-                        data += domain; //ex: "google.com"
-                        data += result[domain]; //ex: "test@ryanamaral.com"
+                        data += domain; //ex: "google"
+                        data += result[domain]; //ex: "web@turtlpass.com"
+                        // console.log(data)
                         var sha512 = hex_sha512(data);
-                        var dataToSend = "/" + sha512 + "\n";
-                        writer.write(dataToSend);
+
+                        const params = {
+                            pass: pin,
+                            salt: sha512,
+                            time: 32, // number of iterations
+                            mem: 65536, // 64 MiB memory cost
+                            hashLen: 64,
+                            parallelism: 4, // number of threads in parallel
+                            type: 1 // Argon2Type.Argon2i
+                        };
+                        kdfWorker('simd', params);
 
                     } catch (errorMsg) {
                         alert(errorMsg);
@@ -190,7 +198,55 @@ async function sendSerialLine() {
     });
 }
 
-async function connectSerial() {
+var worker;
+function kdfWorker(method, params) {
+    if (worker) {
+        if (worker.method === method) {
+            // Using loaded worker
+            worker.postMessage({ calc: method, arg: params });
+            return;
+        } else {
+            worker.terminate();
+        }
+    }
+    console.log('Starting worker...');
+
+    worker = new Worker('js/kdf-worker.js');
+    worker.method = method;
+    var loaded = false;
+    worker.onmessage = function (e) {
+        // console.log(e.data.msg);
+        if (e.data.hash) {
+            connectSerial(e.data.hash);
+        } else if (!loaded) {
+            loaded = true;
+            worker.postMessage({ calc: method, arg: params });
+        }
+    };
+}
+
+function loadScript(src, onload, onerror) {
+    var el = document.createElement('script');
+    el.src = src;
+    el.onload = onload;
+    el.onerror = onerror;
+    document.body.appendChild(el);
+}
+
+function log(msg) {
+    if (!msg) return;
+    console.log(msg);
+}
+
+////////////////
+// USB Serial //
+////////////////
+
+var port, textEncoder, writableStreamClosed, writer;
+let keepReading = true;
+let reader;
+
+async function connectSerial(hash) {
     message.style.marginTop = '30px';
     message.innerHTML = "Connecting to your TurtlPass device...";
 
@@ -209,9 +265,12 @@ async function connectSerial() {
 
         writer = textEncoder.writable.getWriter();
 
-        sendSerialLine();
+        var dataToSend = "/" + hash + "\n";
+        writer.write(dataToSend);
 
     } catch (errorMsg) {
+        console.log(errorMsg);
+
         if (errorMsg == 'NotFoundError: No port selected by the user.') {
             showError('Device not found! Please Try Again');
         } else {

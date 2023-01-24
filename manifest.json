@@ -8,7 +8,7 @@
    "name":"TurtlPass",
    "short_name": "turtlpass",
    "description":"This extension makes a hash of the user inputs and sends it to the device via USB to generate a password for it.",
-   "version":"1.1.0",
+   "version":"1.2.0",
    "author":"TurtlPass",
    "homepage_url":"https://github.com/TurtlPass/turtlpass-chrome-extension",
    "permissions":[
@@ -29,9 +29,12 @@
          "all_frames":true,
          "js":[
             "js/lottie.5.10.0.min.js",
-            "js/passwordVisibility.js"
+            "js/password-visibility.js"
          ],
          "run_at": "document_start"
       }
-   ]
+   ],
+   "content_security_policy": {
+      "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'" 
+   }
 }
