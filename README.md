@@ -45,7 +45,21 @@ TurtlPass Chrome Extension sends a hash of the user's inputs (Domain, Account ID
 2. Go to the **Chrome extensions** page: `chrome://extensions`
 3. Turn on **Developer mode**
 4. Add the extension by clicking **Load Unpacked** button and selecting the downloaded folder
-5. Done - you can start using it!
+5. Done - you 
+6. can start using it!
+
+## 🌐 Supported Browsers
+
+| [Google Chrome](https://www.google.com/chrome) | [Gener8](https://gener8ads.com/products/browser) |
+| :-----------: | :----------: |
+| Supported ✅  | Supported ✅ |
+
+This extension is **not** compatible with:
+
+- Mozilla Firefox
+- Brave
+- Opera
+- Safari
 
 
 ### 🙋 Troubleshoot
