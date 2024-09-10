@@ -1,5 +1,5 @@
 <p align="center">
-<img src="assets/icons/icon-no-padding.png" alt="logo" width=90>
+<img src="https://raw.githubusercontent.com/TurtlPass/turtlpass-firmware-arduino/main/assets/icon.png" alt="logo" width=90>
 <h3 align="center">TurtlPass Chrome Extension</h3>
 <p align="center">
 TurtlPass Chrome Extension sends a hash of the user's inputs (Domain, Account ID, and PIN) to the TurtlPass Firmware via USB. When the physical button on the device is pressed, the firmware emulates an external keyboard and types the password. This method ensures that the password is never transmitted over potentially insecure channels, providing an additional layer of security.
