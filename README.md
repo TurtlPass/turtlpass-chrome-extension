@@ -60,6 +60,7 @@ This extension is **not** compatible with:
 - Brave
 - Opera
 - Safari
+- Arc
 
 
 ### 🙋 Troubleshoot
