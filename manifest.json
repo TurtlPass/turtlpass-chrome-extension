@@ -7,8 +7,8 @@
    },
    "name":"TurtlPass",
    "short_name": "turtlpass",
-   "description":"This extension makes a hash of the user inputs and sends it to the device via USB to generate a password for it.",
-   "version":"1.2.0",
+   "description":"Where Passwords Swim Securely! Unleash Peace of Mind with Turtle-Approved Wisdom. Protecting You, Saving Turtles. \uD83D\uDC22\uD83D\uDCBB\n",
+   "version":"2.0.0",
    "author":"TurtlPass",
    "homepage_url":"https://github.com/TurtlPass/turtlpass-chrome-extension",
    "permissions":[

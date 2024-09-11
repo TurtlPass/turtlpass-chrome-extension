@@ -156,6 +156,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function getParameterValue(parameterName) {
+    // get the URL of the current page
+    const url = window.location.href;
+    // parse the URL to extract the query parameters
+    const urlParams = new URLSearchParams(url.split('?')[1]);
+    // get the value of the specified parameter
+    return urlParams.get(parameterName);
+}
+
 ////////////////
 // KDF Worker //
 ////////////////
@@ -178,17 +187,24 @@ async function startKdfWorker() {
                         // console.log(data)
                         var sha512 = hex_sha512(data);
 
-                        const params = {
-                            pass: pin,
-                            salt: sha512,
-                            time: 32, // number of iterations
-                            mem: 65536, // 64 MiB memory cost
-                            hashLen: 64,
-                            parallelism: 4, // number of threads in parallel
-                            type: 1 // Argon2Type.Argon2i
-                        };
-                        kdfWorker('simd', params);
+                        // Example usage:
+                        const actionValue = getParameterValue('action');
+                        if (actionValue !== null && (actionValue === 'password' || actionValue === 'otp')) {
+                            const params = {
+                                action: actionValue,
+                                pass: pin,
+                                salt: sha512,
+                                time: 32, // number of iterations
+                                mem: 65536, // 64 MiB memory cost
+                                hashLen: 64,
+                                parallelism: 4, // number of threads in parallel
+                                type: 1 // Argon2Type.Argon2i
+                            };
+                            kdfWorker('simd', params);
 
+                        } else {
+                            alert('Action Error');
+                        }
                     } catch (errorMsg) {
                         alert(errorMsg);
                     }
@@ -214,10 +230,10 @@ function kdfWorker(method, params) {
     worker = new Worker('js/kdf-worker.js');
     worker.method = method;
     var loaded = false;
+
     worker.onmessage = function (e) {
-        // console.log(e.data.msg);
-        if (e.data.hash) {
-            connectSerial(e.data.hash);
+        if (e.data.command && e.data.hash) {
+            connectSerial(e.data.command, e.data.hash);
         } else if (!loaded) {
             loaded = true;
             worker.postMessage({ calc: method, arg: params });
@@ -246,7 +262,7 @@ var port, textEncoder, writableStreamClosed, writer;
 let keepReading = true;
 let reader;
 
-async function connectSerial(hash) {
+async function connectSerial(command, hash) {
     message.style.marginTop = '30px';
     message.innerHTML = "Connecting to your TurtlPass device...";
 
@@ -254,18 +270,22 @@ async function connectSerial(hash) {
         port = await navigator.serial.requestPort({
             filters: [{ usbVendorId: 0x2E8A }] // Raspberry Pi
         });
-        await port.open({
-            baudRate: 115200
-        });
+        await port.open({ baudRate: 115200 });
 
         readUntilClosed();
 
         textEncoder = new TextEncoderStream();
         writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
-
         writer = textEncoder.writable.getWriter();
-
-        var dataToSend = "/" + hash + "\n";
+        var dataToSend;
+        if (command === '@') {
+            // Get Otp Code With Secret From EEPROM, given a user hash and the current timestamp
+            // @4dff4...46510a:1676821524
+            const currentTimestampInSeconds = Math.floor(Date.now() / 1000);
+            dataToSend = '@' + hash + ':' + currentTimestampInSeconds + "\n";
+        } else {
+            dataToSend = '/' + hash + "\n";
+        }
         writer.write(dataToSend);
 
     } catch (errorMsg) {
@@ -296,14 +316,17 @@ async function readUntilClosed() {
                     // |reader| has been canceled.
                     break;
                 }
-                if (value.includes('ERROR')) {
-                    keepReading = false;
-                    success = false;
-                    break;
-
-                } else if (value.includes('OK')) {
+                if (value.includes('<PASSWORD-READY>')
+                 || value.includes('<OTP-READY>')) {
                     keepReading = false;
                     success = true;
+                    break;
+                } else if (value.includes('<PASSWORD-INVALID-LENGTH>')
+                        || value.includes('<PASSWORD-INVALID-INPUT>')
+                        || value.includes('<PASSWORD-ERROR>')
+                        || value.includes('<OTP-ERROR>')) {
+                    keepReading = false;
+                    success = false;
                     break;
                 }
             }

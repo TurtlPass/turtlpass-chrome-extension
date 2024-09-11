@@ -68,9 +68,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // DOMAIN
             const domainField = document.getElementById('domain');
             if (protocol !== 'http' && protocol !== 'https' && protocol !== 'ftp') {
-                //ex: chrome://extensions
+                // Unsupported protocol
+                //ex: chrome://
                 //ex: chrome-extension://
-                domainField.value = '(Unsupported Page)';
+                domainField.value = protocol + '://';
+                document.getElementById('favicon').src = 'https://static.vecteezy.com/system/resources/thumbnails/017/172/379/small/warning-message-concept-represented-by-exclamation-mark-icon-exclamation-symbol-in-triangle-png.png';
             } else {
                 domainField.value = domain;
                 document.getElementById('favicon').src = 'https://s2.googleusercontent.com/s2/favicons?domain=' + url;
@@ -94,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         } else {
-            document.getElementById('domain').value = '<< Domain Not Found >>';
+            document.getElementById('domain').value = '!! Domain Not Found !!';
         }
     });
 
@@ -121,33 +123,39 @@ function persistEmailDomain(domain) {
     });
 }
 
-document.getElementById('unlockButton').addEventListener('click', () => {
+function validateUserInputs() {
+    const domainValue = document.getElementById('domain').value;
     if (!document.getElementById('domain').value) {
         alert('The \'Domain\' field is empty.');
-        return;
+        return false;
     }
-    if (document.getElementById('domain').value === '(Unsupported Page)') {
+    if (domainValue.includes('://') || domainValue.includes('!!')) {
         alert('This domain is not supported.');
-        return;
+        return false;
     }
-    
     if (!document.getElementById('email').value) {
         alert('The \'Account ID\' field is empty.');
-        return;
+        return false;
     }
     if (navigator.serial) {
-        const domainField = document.getElementById('domain');
         chrome.storage.local.set({
-            'selectedDomain': domainField.value
+            'selectedDomain': domainValue
         }, () => {
             // selectedDomain saved
         });
-        if (chrome.runtime.openOptionsPage) {
-            chrome.runtime.openOptionsPage();
-        } else {
-            window.open(chrome.runtime.getURL('device.html'));
-        }
     } else {
         alert('Web Serial API not supported.');
+        return false;
     }
+    return true;
+}
+
+document.getElementById('passwordButton').addEventListener('click', () => {
+    if (!validateUserInputs()) return;
+    window.open(chrome.runtime.getURL('app.html?action=password'));
+});
+
+document.getElementById('otpButton').addEventListener('click', () => {
+    if (!validateUserInputs()) return;
+    window.open(chrome.runtime.getURL('app.html?action=otp'));
 });

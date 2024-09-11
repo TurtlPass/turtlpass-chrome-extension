@@ -19,8 +19,9 @@ function log(msg) {
     self.postMessage({ msg: msg });
 }
 
-function connectSerial(hash) {
-    self.postMessage({ hash: hash });
+function connectSerial(command, hash) {
+    console.log('connectSerial...');
+    self.postMessage({ command: command, hash: hash });
 }
 
 function loadScript(script, callback, errorCallback) {

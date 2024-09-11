@@ -76,14 +76,6 @@ function calcHash() {
     if (!Module._argon2_hash_ext) {
         return log('Error');
     }
-    // console.log(
-    //     'Params: ' +
-    //         Object.keys(arg)
-    //             .map(function (key) {
-    //                 return key + '=' + arg[key];
-    //             })
-    //             .join(', ')
-    // );
     var dt = now();
     var t_cost = (arg && arg.time) || 10;
     var m_cost = (arg && arg.mem) || 1024;
@@ -157,7 +149,14 @@ function calcHash() {
 
         //console.log('Hash: ' + hash);
         console.log('Elapsed: ' + Math.round(elapsed) + 'ms');
-        connectSerial(hash);
+
+        if (arg.action === 'otp') {
+            console.log('otp');
+            connectSerial("@", hash);
+        } else { // default: password
+            console.log('password');
+            connectSerial("/", hash);
+        }
 
     } else {
         try {
