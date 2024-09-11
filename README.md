@@ -90,11 +90,6 @@ chrome://flags/#enable-experimental-web-platform-features
 * [Loading/Success/Error Animation](https://lottiefiles.com/627-loading-success-failed)
 
 
-## 🔮 Future improvements
-
-- Read NFC Tag ID with an external reader via USB serial (optional input)
-
-
 ## 📄 License
 
 TurtlPass Chrome Extension is released under the [MIT License](https://github.com/TurtlPass/turtlpass-chrome-extension/blob/main/LICENSE).
