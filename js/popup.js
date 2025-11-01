@@ -154,8 +154,3 @@ document.getElementById('passwordButton').addEventListener('click', () => {
     if (!validateUserInputs()) return;
     window.open(chrome.runtime.getURL('app.html?action=password'));
 });
-
-document.getElementById('otpButton').addEventListener('click', () => {
-    if (!validateUserInputs()) return;
-    window.open(chrome.runtime.getURL('app.html?action=otp'));
-});

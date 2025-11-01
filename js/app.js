@@ -186,22 +186,21 @@ async function startKdfWorker() {
                         data += result[domain]; //ex: "web@turtlpass.com"
                         // console.log(data)
                         var sha512 = hex_sha512(data);
+                        //console.log('sha512: ' + sha512);
 
-                        // Example usage:
                         const actionValue = getParameterValue('action');
-                        if (actionValue !== null && (actionValue === 'password' || actionValue === 'otp')) {
+                        if (actionValue !== null && actionValue === 'password') {
                             const params = {
                                 action: actionValue,
-                                pass: pin,
-                                salt: sha512,
-                                time: 32, // number of iterations
-                                mem: 65536, // 64 MiB memory cost
-                                hashLen: 64,
-                                parallelism: 4, // number of threads in parallel
-                                type: 1 // Argon2Type.Argon2i
+                                pass: pin.toString(),      // convert PIN to string
+                                salt: sha512,              // SHA-512 hex string
+                                time: 32,                  // iterations
+                                mem: 65536,                // memory in KiB
+                                hashLen: 64,               // output length
+                                parallelism: 4,            // threads
+                                type: 2                    // Argon2Type.ID = 2
                             };
                             kdfWorker('simd', params);
-
                         } else {
                             alert('Action Error');
                         }
@@ -225,15 +224,13 @@ function kdfWorker(method, params) {
             worker.terminate();
         }
     }
-    console.log('Starting worker...');
-
+    //console.log('Starting worker...');
     worker = new Worker('js/kdf-worker.js');
     worker.method = method;
     var loaded = false;
-
     worker.onmessage = function (e) {
-        if (e.data.command && e.data.hash) {
-            connectSerial(e.data.command, e.data.hash);
+        if (e.data.hash) {
+            connectSerial(e.data.hash);
         } else if (!loaded) {
             loaded = true;
             worker.postMessage({ calc: method, arg: params });
@@ -254,94 +251,117 @@ function log(msg) {
     console.log(msg);
 }
 
+function hexStringToBytes(hex) {
+    if (hex.length % 2 !== 0) throw new Error("Invalid hex string");
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return bytes;
+}
+
 ////////////////
 // USB Serial //
 ////////////////
 
-var port, textEncoder, writableStreamClosed, writer;
-let keepReading = true;
-let reader;
+var port, writer, reader;
 
-async function connectSerial(command, hash) {
+async function connectSerial(hash, length = 100, charset = proto.turtlpass.Charset.LETTERS_NUMBERS) {
     message.style.marginTop = '30px';
-    message.innerHTML = "Connecting to your TurtlPass device...";
+    message.innerText = "Connecting to your TurtlPass device...";
 
     try {
+        // Request and open serial port
         port = await navigator.serial.requestPort({
-            filters: [{ usbVendorId: 0x2E8A }] // Raspberry Pi
+            filters: [{ usbVendorId: 0x1209, usbProductId: 0xFA55 }]
         });
         await port.open({ baudRate: 115200 });
 
-        readUntilClosed();
+        writer = port.writable.getWriter();
+        reader = port.readable.getReader();
 
-        textEncoder = new TextEncoderStream();
-        writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
-        writer = textEncoder.writable.getWriter();
-        var dataToSend;
-        if (command === '@') {
-            // Get Otp Code With Secret From EEPROM, given a user hash and the current timestamp
-            // @4dff4...46510a:1676821524
-            const currentTimestampInSeconds = Math.floor(Date.now() / 1000);
-            dataToSend = '@' + hash + ':' + currentTimestampInSeconds + "\n";
+        // Build protobuf command
+        const cmd = new proto.turtlpass.Command();
+        cmd.type = proto.turtlpass.CommandType.GENERATE_PASSWORD;
+
+        const genParams = new proto.turtlpass.GeneratePasswordParams();
+
+        genParams.entropy = hexStringToBytes(hash);  // raw bytes from hex
+
+        // Assign values to your params
+        genParams.length = length;
+
+        // Ensure charset is a numeric enum value
+        const charsetValue = typeof charset === "string"
+            ? proto.turtlpass.Charset[charset] ?? proto.turtlpass.Charset.LETTERS_NUMBERS
+            : charset;
+        genParams.charset = charsetValue;
+
+        cmd.genPass = genParams;
+
+        // Serialize command with 2-byte little-endian length prefix
+        const messageBytes = proto.turtlpass.Command.encode(cmd).finish();
+        const fullMessage = new Uint8Array(2 + messageBytes.length);
+        fullMessage[0] = messageBytes.length & 0xff;
+        fullMessage[1] = (messageBytes.length >> 8) & 0xff;
+        fullMessage.set(messageBytes, 2);
+
+        // Send to device
+        await writer.write(fullMessage);
+
+        // Read response
+        const resp = await readProtoResponse();
+        const errorName = proto.turtlpass.ErrorCode[resp.error] || 'UNKNOWN_ERROR';
+
+        if (resp.success) {
+            showSuccess('Success! The Device is Ready');
         } else {
-            dataToSend = '/' + hash + "\n";
+            showError(`Error: ${errorName}`);
         }
-        writer.write(dataToSend);
 
-    } catch (errorMsg) {
-        console.log(errorMsg);
-
-        if (errorMsg == 'NotFoundError: No port selected by the user.') {
-            showError('Device not found! Please Try Again');
+    } catch (err) {
+        if (err instanceof DOMException) {
+            console.error("DOMException:", err.name, err.message, err.code);
+            showError(`Serial Error: ${err.name} - ${err.message}`);
         } else {
-            showError('Connection error! Please Try Again');
+            console.error("Unknown Error:", err);
+            showError(`Unexpected Error: ${err}`);
         }
+    } finally {
+        if (reader) { await reader.releaseLock(); reader = null; }
+        if (writer) { await writer.releaseLock(); writer = null; }
     }
 }
 
-async function readUntilClosed() {
-    const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
-    const reader = textDecoder.readable.getReader();
-    var success = false;
+async function readProtoResponse() {
+    let buffer = new Uint8Array(0);
 
-    while (port.readable && keepReading) {
-        try {
-            while (true) {
-                const {
-                    value,
-                    done
-                } = await reader.read();
-                if (done) {
-                    // |reader| has been canceled.
-                    break;
-                }
-                if (value.includes('<PASSWORD-READY>')
-                 || value.includes('<OTP-READY>')) {
-                    keepReading = false;
-                    success = true;
-                    break;
-                } else if (value.includes('<PASSWORD-INVALID-LENGTH>')
-                        || value.includes('<PASSWORD-INVALID-INPUT>')
-                        || value.includes('<PASSWORD-ERROR>')
-                        || value.includes('<OTP-ERROR>')) {
-                    keepReading = false;
-                    success = false;
-                    break;
-                }
-            }
-        } catch (error) {
-            if (error != 'NetworkError: The device has been lost.') {
-                alert(error);
-            }
-        } finally {
-            await reader.releaseLock();
-        }
-    }
-    if (success) {
-        showSuccess('Success! The Device is Ready');
-    } else {
-        showError('Error! Please Try Again');
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) throw new Error("Device disconnected");
+        if (!value) continue;
+
+        // Append new chunk to buffer
+        const newBuffer = new Uint8Array(buffer.length + value.length);
+        newBuffer.set(buffer, 0);
+        newBuffer.set(value, buffer.length);
+        buffer = newBuffer;
+
+        // Wait until we have at least 2 bytes for length prefix
+        if (buffer.length < 2) continue;
+
+        const length = buffer[0] | (buffer[1] << 8);
+
+        // Wait until the full message is received
+        if (buffer.length < 2 + length) continue;
+
+        const messageBytes = buffer.slice(2, 2 + length);
+
+        // Remove processed bytes from buffer
+        buffer = buffer.slice(2 + length);
+
+        // Decode protobuf message
+        return proto.turtlpass.Response.decode(messageBytes);
     }
 }
 

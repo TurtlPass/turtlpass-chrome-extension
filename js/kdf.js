@@ -150,12 +150,10 @@ function calcHash() {
         //console.log('Hash: ' + hash);
         console.log('Elapsed: ' + Math.round(elapsed) + 'ms');
 
-        if (arg.action === 'otp') {
-            console.log('otp');
-            connectSerial("@", hash);
-        } else { // default: password
-            console.log('password');
-            connectSerial("/", hash);
+        if (arg.action === 'password') {
+            connectSerial(hash);
+        } else {
+            console.log('unknown argument');
         }
 
     } else {
